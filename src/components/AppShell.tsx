@@ -1,6 +1,5 @@
-import { Link, Outlet, useLocation, createFileRoute } from "@tanstack/react-router";
+import { Link, useLocation } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { LogoMark } from "./pc/LogoMark";
 import { FindYourClanModal } from "./pc/FindYourClanModal";
 import { useEffect, useState, type ReactNode } from "react";
 
@@ -72,8 +71,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   );
 }
 
-// re-export Outlet for convenience
-export { Outlet, createFileRoute };
+// icons
+
 
 function WalletIcon({ className = "" }: { className?: string }) {
   return (
