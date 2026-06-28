@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { challenges } from "../lib/mock";
+import { challenges, clans } from "../lib/mock";
+import { useCurrentUser } from "../lib/telegram-auth";
 
 export const Route = createFileRoute("/challenges")({
   head: () => ({
@@ -15,6 +16,8 @@ const streak = 4;
 const week = ["M","T","W","T","F","S","S"];
 
 function Challenges() {
+  const user = useCurrentUser();
+  const clanName = clans[user.clan].name;
   return (
     <div className="px-5 pt-6">
       <header>
@@ -63,7 +66,9 @@ function Challenges() {
               </span>
               <div className="min-w-0 flex-1">
                 <div className="flex items-start justify-between gap-2">
-                  <h3 className="font-display font-bold leading-tight">{c.title}</h3>
+                  <h3 className="font-display font-bold leading-tight">
+                    {c.kind === "clan" ? `${clanName}: ${c.title}` : c.title}
+                  </h3>
                   <span className="shrink-0 rounded-full bg-purple/10 px-2.5 py-1 text-[11px] font-bold text-purple">+{c.reward}</span>
                 </div>
                 <p className="mt-0.5 text-xs text-muted-foreground">{c.subtitle}</p>

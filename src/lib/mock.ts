@@ -40,7 +40,7 @@ export const leaderboard = [
 export const challenges = [
   { id: "photo", title: "Weekly photo challenge", subtitle: "Snap your wildest move", reward: 150, state: "start" as const, kind: "photo" },
   { id: "quiz",  title: "Daily quiz", subtitle: "3 quick questions", reward: 40, state: "claim" as const, kind: "quiz" },
-  { id: "clan",  title: "Circles: reach 70,000", subtitle: "Clan collective goal", reward: 200, state: "locked" as const, kind: "clan", progress: 0.81 },
+  { id: "clan",  title: "reach 70,000", subtitle: "Clan collective goal", reward: 200, state: "locked" as const, kind: "clan", progress: 0.81 },
   { id: "move",  title: "Move for 20 minutes", subtitle: "Anything counts", reward: 80, state: "start" as const, kind: "move" },
 ];
 

@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { motion } from "framer-motion";
+import { Check, HelpCircle, Sparkles, Users } from "lucide-react";
 import { season, activity } from "../lib/mock";
 import { LogoMark } from "../components/pc/LogoMark";
 import { InviteSheet } from "../components/pc/InviteSheet";
@@ -68,7 +69,7 @@ function Wallet() {
           <span className="font-display text-lg font-semibold text-white/80">PNT</span>
         </div>
         <div className="relative mt-5 flex items-center justify-between text-xs">
-          <span className="text-white/70">Tap to see history</span>
+          <span className="text-white/70">Spend on rewards</span>
           <button
             onClick={() => setInviteOpen(true)}
             className="rounded-full bg-white/15 px-3 py-1.5 font-semibold backdrop-blur-sm hover:bg-white/25 transition"
@@ -116,7 +117,10 @@ function Wallet() {
                 a.tag === "camp" ? "bg-mint text-purple-deep" :
                 "bg-purple/10 text-purple"
               }`}>
-                {a.tag === "referral" ? "👥" : a.tag === "camp" ? "⛺" : a.tag === "quiz" ? "?" : "✓"}
+                {a.tag === "referral" ? <Users className="h-5 w-5" /> :
+                 a.tag === "camp" ? <Sparkles className="h-5 w-5" /> :
+                 a.tag === "quiz" ? <HelpCircle className="h-5 w-5" /> :
+                 <Check className="h-5 w-5" />}
               </span>
               <div className="min-w-0 flex-1">
                 <p className="font-semibold text-sm truncate">{a.label}</p>
