@@ -12,6 +12,7 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AppShell } from "../components/AppShell";
+import { TelegramAuthProvider } from "../lib/telegram-auth";
 
 function NotFoundComponent() {
   return (
@@ -105,6 +106,8 @@ function RootShell({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <head>
+        {/* Telegram Mini App SDK — must load before the app reads window.Telegram. */}
+        <script src="https://telegram.org/js/telegram-web-app.js" />
         <HeadContent />
       </head>
       <body>
@@ -119,9 +122,11 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   return (
     <QueryClientProvider client={queryClient}>
-      <AppShell>
-        <Outlet />
-      </AppShell>
+      <TelegramAuthProvider>
+        <AppShell>
+          <Outlet />
+        </AppShell>
+      </TelegramAuthProvider>
     </QueryClientProvider>
   );
 }

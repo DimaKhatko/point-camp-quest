@@ -1,9 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { user, season, activity } from "../lib/mock";
+import { season, activity } from "../lib/mock";
 import { LogoMark } from "../components/pc/LogoMark";
 import { InviteSheet } from "../components/pc/InviteSheet";
+import { useCurrentUser } from "../lib/telegram-auth";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -17,6 +18,7 @@ export const Route = createFileRoute("/")({
 
 function Wallet() {
   const [inviteOpen, setInviteOpen] = useState(false);
+  const user = useCurrentUser();
   const pct = ((season.totalDays - season.daysLeft) / season.totalDays) * 100;
 
   return (
@@ -24,9 +26,17 @@ function Wallet() {
       {/* Header */}
       <header className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="grid h-11 w-11 place-items-center rounded-2xl bg-gradient-to-br from-purple to-purple-glow font-display text-lg font-bold text-white shadow-[var(--shadow-card)]">
-            {user.initial}
-          </div>
+          {user.photoUrl ? (
+            <img
+              src={user.photoUrl}
+              alt={user.name}
+              className="h-11 w-11 rounded-2xl object-cover shadow-[var(--shadow-card)]"
+            />
+          ) : (
+            <div className="grid h-11 w-11 place-items-center rounded-2xl bg-gradient-to-br from-purple to-purple-glow font-display text-lg font-bold text-white shadow-[var(--shadow-card)]">
+              {user.initial}
+            </div>
+          )}
           <div className="min-w-0">
             <p className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Welcome back</p>
             <p className="font-display text-lg font-bold leading-tight">Hey, {user.name} 👋</p>
