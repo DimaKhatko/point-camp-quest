@@ -15,12 +15,22 @@ export interface AppEntryResult {
  * distinguishable so it can be shown on the error screen for on-device
  * diagnosis. The server maps its finer-grained internal failure to one of these.
  */
-export type EntryFailureReason = "invalid_signature" | "empty_init_data" | "stale" | "no_token";
+export type EntryFailureReason =
+  | "invalid_signature"
+  | "empty_init_data"
+  | "stale"
+  | "no_token"
+  | "firebase_init_failed";
 
 /** Structured response from `enterApp` — either a verified result or a reason. */
 export type EntryResponse =
   | ({ ok: true } & AppEntryResult)
-  | { ok: false; reason: EntryFailureReason };
+  | {
+      ok: false;
+      reason: EntryFailureReason;
+      /** Short, non-secret hint (e.g. an error message) shown for diagnosis. */
+      detail?: string;
+    };
 
 /** A pending user as shown in the admin verification queue. */
 export interface PendingUser {

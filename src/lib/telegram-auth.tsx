@@ -11,6 +11,7 @@ export type EntryReason =
   | "empty_init_data"
   | "stale"
   | "no_token"
+  | "firebase_init_failed"
   | "request_failed"
   | "timed_out";
 
@@ -47,6 +48,8 @@ interface TelegramAuthState {
    * (surfaced on the error screen). Null on success or while still resolving.
    */
   entryReason: EntryReason | null;
+  /** Optional short, non-secret hint accompanying entryReason (e.g. an error message). */
+  entryDetail: string | null;
   /** True while the server-side first-login call is in flight. */
   entryLoading: boolean;
   /**
@@ -95,6 +98,7 @@ export function TelegramAuthProvider({ children }: { children: ReactNode }) {
   const [initData, setInitData] = useState<string | null>(null);
   const [entry, setEntry] = useState<AppEntryResult | null>(null);
   const [entryReason, setEntryReason] = useState<EntryReason | null>(null);
+  const [entryDetail, setEntryDetail] = useState<string | null>(null);
   const [entryLoading, setEntryLoading] = useState(false);
   const [entryResolved, setEntryResolved] = useState(false);
 
@@ -167,8 +171,9 @@ export function TelegramAuthProvider({ children }: { children: ReactNode }) {
           setEntry({ status: result.status, house: result.house });
         } else {
           // Verification failed server-side — surface the reason for diagnosis.
-          console.warn(`[auth] entry not ok — reason=${result.reason}`);
+          console.warn(`[auth] entry not ok — reason=${result.reason}`, result.detail ?? "");
           setEntryReason(result.reason);
+          setEntryDetail(result.detail ?? null);
         }
       })
       .catch((err) => {
@@ -192,10 +197,11 @@ export function TelegramAuthProvider({ children }: { children: ReactNode }) {
       initData,
       entry,
       entryReason,
+      entryDetail,
       entryLoading,
       entryResolved,
     }),
-    [telegramUser, ready, initData, entry, entryReason, entryLoading, entryResolved],
+    [telegramUser, ready, initData, entry, entryReason, entryDetail, entryLoading, entryResolved],
   );
 
   return <TelegramAuthContext.Provider value={value}>{children}</TelegramAuthContext.Provider>;

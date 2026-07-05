@@ -35,12 +35,25 @@ export const enterApp = createServerFn({ method: "POST" })
       return { ok: false, reason };
     }
 
-    const { runFirstLogin } = await import("./users");
-    const entry = await runFirstLogin({
-      user: result.data.user,
-      startParam: result.data.startParam,
-    });
-    // status/house are not PII (pending|active|rejected, circles|spikes).
-    console.log(`[enterApp] success — status=${entry.status}, house=${entry.house ?? "null"}`);
-    return { ok: true, status: entry.status, house: entry.house };
+    // Everything below can throw during Firebase Admin init (bad key/env) or the
+    // first Firestore access — previously swallowed. Surface it explicitly.
+    try {
+      const { runFirstLogin } = await import("./users");
+      const entry = await runFirstLogin({
+        user: result.data.user,
+        startParam: result.data.startParam,
+      });
+      // status/house are not PII (pending|active|rejected, circles|spikes).
+      console.log(`[enterApp] success — status=${entry.status}, house=${entry.house ?? "null"}`);
+      return { ok: true, status: entry.status, house: entry.house };
+    } catch (err) {
+      const name = err instanceof Error ? err.name : "NonError";
+      const message = err instanceof Error ? err.message : String(err);
+      const stack = err instanceof Error ? err.stack : undefined;
+      console.error(`[enterApp] ERROR name=${name} message=${message}`);
+      if (stack) console.error(`[enterApp] ERROR stack:\n${stack}`);
+      // Short, non-secret hint for the phone (Firebase errors describe the
+      // problem without echoing the key).
+      return { ok: false, reason: "firebase_init_failed", detail: message.slice(0, 200) };
+    }
   });

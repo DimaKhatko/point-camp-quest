@@ -41,7 +41,8 @@ export function resolveGateView(state: {
  * - active   → render the app.
  */
 export function AuthGate({ children }: { children: ReactNode }) {
-  const { isTelegram, entry, entryReason, entryLoading, entryResolved } = useTelegramAuth();
+  const { isTelegram, entry, entryReason, entryDetail, entryLoading, entryResolved } =
+    useTelegramAuth();
   const view = resolveGateView({ isTelegram, entryLoading, entryResolved, entry });
 
   switch (view) {
@@ -55,6 +56,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
           <h1>Couldn't verify your session</h1>
           <p>Please reopen the app from @{ADMIN_USERNAME}'s bot.</p>
           <p>Reason: {entryReason ?? "unknown"}</p>
+          {entryDetail && <p>Detail: {entryDetail}</p>}
         </div>
       );
     case "pending":
