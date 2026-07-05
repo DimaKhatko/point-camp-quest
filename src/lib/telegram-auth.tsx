@@ -35,6 +35,13 @@ interface TelegramAuthState {
   entry: AppEntryResult | null;
   /** True while the server-side first-login call is in flight. */
   entryLoading: boolean;
+  /**
+   * True once the entry flow has reached a terminal state — success, error, OR
+   * missing/empty initData. The gate uses this so it can never hang: a null
+   * `entry` after `entryResolved` means "couldn't verify" (an error state),
+   * not "still loading".
+   */
+  entryResolved: boolean;
 }
 
 const TelegramAuthContext = createContext<TelegramAuthState | null>(null);
@@ -74,29 +81,83 @@ export function TelegramAuthProvider({ children }: { children: ReactNode }) {
   const [initData, setInitData] = useState<string | null>(null);
   const [entry, setEntry] = useState<AppEntryResult | null>(null);
   const [entryLoading, setEntryLoading] = useState(false);
+  const [entryResolved, setEntryResolved] = useState(false);
 
   // Telegram's SDK only exists in the browser, so reading it after mount keeps
   // SSR and the first client render identical (mock user) — no hydration drift.
   useEffect(() => {
+    console.log("[auth] provider mounted");
     const webApp = getTelegramWebApp();
-    if (webApp) {
+
+    if (!webApp) {
+      console.log("[auth] no Telegram WebApp — running outside Telegram");
+      setReady(true);
+      return;
+    }
+
+    // Read identity + signed initData up front, then set state, so a throw from
+    // ready()/expand() can never strand us before the state is populated.
+    const tgUser = webApp.initDataUnsafe?.user ?? null;
+    const rawInitData = webApp.initData || "";
+    console.log(
+      `[auth] Telegram WebApp present — user id: ${tgUser?.id ?? "none"}, initData length: ${rawInitData.length}`,
+    );
+
+    setTelegramUser(tgUser);
+    setInitData(rawInitData || null);
+    setReady(true);
+
+    try {
       webApp.ready();
       webApp.expand();
-      setTelegramUser(webApp.initDataUnsafe?.user ?? null);
-      setInitData(webApp.initData || null);
-
-      // Run the server-side first-login flow with the signed initData. This
-      // registers the user and resolves their status/House. The client never
-      // writes to Firestore — only this server function does.
-      if (webApp.initData) {
-        setEntryLoading(true);
-        enterApp({ data: webApp.initData })
-          .then((result) => setEntry(result))
-          .catch(() => setEntry(null))
-          .finally(() => setEntryLoading(false));
-      }
+      console.log("[auth] called WebApp.ready()/expand()");
+    } catch (err) {
+      console.warn("[auth] WebApp.ready()/expand() threw", err);
     }
-    setReady(true);
+
+    // Without a signed initData string we cannot verify the session. Resolve to
+    // a definite (error) state instead of hanging the gate on "Loading".
+    if (!rawInitData) {
+      console.warn("[auth] initData is empty — cannot verify; resolving to error state");
+      setEntryResolved(true);
+      return;
+    }
+
+    // Run the server-side first-login flow with the signed initData. This
+    // registers the user and resolves their status/House. The client never
+    // writes to Firestore — only this server function does.
+    console.log("[auth] calling enterApp…");
+    setEntryLoading(true);
+
+    let settled = false;
+    const finalize = () => {
+      // Terminal in every case — the gate always leaves the loading state.
+      setEntryLoading(false);
+      setEntryResolved(true);
+    };
+    // Safety net: if the request never settles (hung network), resolve anyway
+    // so the gate can't stay on "Loading" indefinitely.
+    const timer = setTimeout(() => {
+      if (settled) return;
+      console.error("[auth] enterApp timed out after 12s — resolving to error state");
+      finalize();
+    }, 12000);
+
+    enterApp({ data: rawInitData })
+      .then((result) => {
+        console.log("[auth] enterApp resolved:", result);
+        setEntry(result);
+      })
+      .catch((err) => {
+        console.error("[auth] enterApp failed:", err);
+        setEntry(null);
+      })
+      .finally(() => {
+        settled = true;
+        clearTimeout(timer);
+        console.log("[auth] enterApp settled");
+        finalize();
+      });
   }, []);
 
   const value = useMemo<TelegramAuthState>(
@@ -108,8 +169,9 @@ export function TelegramAuthProvider({ children }: { children: ReactNode }) {
       initData,
       entry,
       entryLoading,
+      entryResolved,
     }),
-    [telegramUser, ready, initData, entry, entryLoading],
+    [telegramUser, ready, initData, entry, entryLoading, entryResolved],
   );
 
   return <TelegramAuthContext.Provider value={value}>{children}</TelegramAuthContext.Provider>;
