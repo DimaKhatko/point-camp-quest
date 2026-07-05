@@ -41,19 +41,20 @@ export function resolveGateView(state: {
  * - active   → render the app.
  */
 export function AuthGate({ children }: { children: ReactNode }) {
-  const { isTelegram, entry, entryLoading, entryResolved } = useTelegramAuth();
+  const { isTelegram, entry, entryReason, entryLoading, entryResolved } = useTelegramAuth();
   const view = resolveGateView({ isTelegram, entryLoading, entryResolved, entry });
 
   switch (view) {
     case "loading":
       return <div>Loading…</div>;
     case "error":
-      // Definite state, not a hang: session couldn't be verified (empty
-      // initData, or enterApp failed).
+      // Definite state, not a hang: session couldn't be verified. The reason is
+      // shown on-device so the failure can be diagnosed without a debugger.
       return (
         <div>
           <h1>Couldn't verify your session</h1>
           <p>Please reopen the app from @{ADMIN_USERNAME}'s bot.</p>
+          <p>Reason: {entryReason ?? "unknown"}</p>
         </div>
       );
     case "pending":

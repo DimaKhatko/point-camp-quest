@@ -5,6 +5,15 @@ import { user as mockUser } from "./mock";
 import type { AppEntryResult } from "./app-entry";
 import { enterApp } from "../server/entry";
 
+/** Reason shown on the "couldn't verify" screen for on-device diagnosis. */
+export type EntryReason =
+  | "invalid_signature"
+  | "empty_init_data"
+  | "stale"
+  | "no_token"
+  | "request_failed"
+  | "timed_out";
+
 // The app user: identity comes from Telegram when available, gamification
 // stats stay mocked for now (those would come from our own backend later).
 export interface AuthUser {
@@ -33,6 +42,11 @@ interface TelegramAuthState {
   initData: string | null;
   /** Server-verified entry result (status + House), or null until resolved. */
   entry: AppEntryResult | null;
+  /**
+   * When the entry flow resolved WITHOUT a verified result, the reason why
+   * (surfaced on the error screen). Null on success or while still resolving.
+   */
+  entryReason: EntryReason | null;
   /** True while the server-side first-login call is in flight. */
   entryLoading: boolean;
   /**
@@ -80,6 +94,7 @@ export function TelegramAuthProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
   const [initData, setInitData] = useState<string | null>(null);
   const [entry, setEntry] = useState<AppEntryResult | null>(null);
+  const [entryReason, setEntryReason] = useState<EntryReason | null>(null);
   const [entryLoading, setEntryLoading] = useState(false);
   const [entryResolved, setEntryResolved] = useState(false);
 
@@ -119,6 +134,7 @@ export function TelegramAuthProvider({ children }: { children: ReactNode }) {
     // a definite (error) state instead of hanging the gate on "Loading".
     if (!rawInitData) {
       console.warn("[auth] initData is empty — cannot verify; resolving to error state");
+      setEntryReason("empty_init_data");
       setEntryResolved(true);
       return;
     }
@@ -140,17 +156,24 @@ export function TelegramAuthProvider({ children }: { children: ReactNode }) {
     const timer = setTimeout(() => {
       if (settled) return;
       console.error("[auth] enterApp timed out after 12s — resolving to error state");
+      setEntryReason("timed_out");
       finalize();
     }, 12000);
 
     enterApp({ data: rawInitData })
       .then((result) => {
         console.log("[auth] enterApp resolved:", result);
-        setEntry(result);
+        if (result.ok) {
+          setEntry({ status: result.status, house: result.house });
+        } else {
+          // Verification failed server-side — surface the reason for diagnosis.
+          console.warn(`[auth] entry not ok — reason=${result.reason}`);
+          setEntryReason(result.reason);
+        }
       })
       .catch((err) => {
-        console.error("[auth] enterApp failed:", err);
-        setEntry(null);
+        console.error("[auth] enterApp request failed:", err);
+        setEntryReason("request_failed");
       })
       .finally(() => {
         settled = true;
@@ -168,10 +191,11 @@ export function TelegramAuthProvider({ children }: { children: ReactNode }) {
       user: buildUser(telegramUser),
       initData,
       entry,
+      entryReason,
       entryLoading,
       entryResolved,
     }),
-    [telegramUser, ready, initData, entry, entryLoading, entryResolved],
+    [telegramUser, ready, initData, entry, entryReason, entryLoading, entryResolved],
   );
 
   return <TelegramAuthContext.Provider value={value}>{children}</TelegramAuthContext.Provider>;

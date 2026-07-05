@@ -17,8 +17,8 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 /** Verify initData and assert the caller is the configured admin. */
 async function requireAdmin(initData: string): Promise<void> {
-  const { verifyTelegramInitData } = await import("./validate-telegram-init-data");
-  const { user } = verifyTelegramInitData(initData);
+  const { verifyTelegramInitDataOrThrow } = await import("./validate-telegram-init-data");
+  const { user } = verifyTelegramInitDataOrThrow(initData);
 
   const adminId = process.env.ADMIN_TELEGRAM_ID;
   if (!adminId) {

@@ -10,6 +10,18 @@ export interface AppEntryResult {
   house: House | null;
 }
 
+/**
+ * Coarse, client-facing failure reason for the entry flow. Deliberately
+ * distinguishable so it can be shown on the error screen for on-device
+ * diagnosis. The server maps its finer-grained internal failure to one of these.
+ */
+export type EntryFailureReason = "invalid_signature" | "empty_init_data" | "stale" | "no_token";
+
+/** Structured response from `enterApp` — either a verified result or a reason. */
+export type EntryResponse =
+  | ({ ok: true } & AppEntryResult)
+  | { ok: false; reason: EntryFailureReason };
+
 /** A pending user as shown in the admin verification queue. */
 export interface PendingUser {
   telegramId: number;
