@@ -11,6 +11,7 @@ import { type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { AppShell } from "../components/AppShell";
+import { AuthGate } from "../components/AuthGate";
 import { TelegramAuthProvider } from "../lib/telegram-auth";
 
 function NotFoundComponent() {
@@ -48,7 +49,10 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
         </p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
-            onClick={() => { router.invalidate(); reset(); }}
+            onClick={() => {
+              router.invalidate();
+              reset();
+            }}
             className="inline-flex items-center justify-center rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground"
           >
             Try again
@@ -72,15 +76,32 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
       { name: "theme-color", content: "#5B2C9D" },
       { title: "Point Camp — Level up your adventure" },
-      { name: "description", content: "Earn points, join your clan, and level up between camp sessions." },
+      {
+        name: "description",
+        content: "Earn points, join your clan, and level up between camp sessions.",
+      },
       { property: "og:title", content: "Point Camp — Level up your adventure" },
-      { property: "og:description", content: "Earn points, join your clan, and level up between camp sessions." },
+      {
+        property: "og:description",
+        content: "Earn points, join your clan, and level up between camp sessions.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:title", content: "Point Camp — Level up your adventure" },
-      { name: "twitter:description", content: "Earn points, join your clan, and level up between camp sessions." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/243b7f58-7f66-4cea-94a2-02489ac54bde/id-preview-85989114--8bb041ca-7960-4023-ae93-90cea63eb89a.lovable.app-1782594646749.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/243b7f58-7f66-4cea-94a2-02489ac54bde/id-preview-85989114--8bb041ca-7960-4023-ae93-90cea63eb89a.lovable.app-1782594646749.png" },
+      {
+        name: "twitter:description",
+        content: "Earn points, join your clan, and level up between camp sessions.",
+      },
+      {
+        property: "og:image",
+        content:
+          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/243b7f58-7f66-4cea-94a2-02489ac54bde/id-preview-85989114--8bb041ca-7960-4023-ae93-90cea63eb89a.lovable.app-1782594646749.png",
+      },
+      {
+        name: "twitter:image",
+        content:
+          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/243b7f58-7f66-4cea-94a2-02489ac54bde/id-preview-85989114--8bb041ca-7960-4023-ae93-90cea63eb89a.lovable.app-1782594646749.png",
+      },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
@@ -119,9 +140,11 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <TelegramAuthProvider>
-        <AppShell>
-          <Outlet />
-        </AppShell>
+        <AuthGate>
+          <AppShell>
+            <Outlet />
+          </AppShell>
+        </AuthGate>
       </TelegramAuthProvider>
     </QueryClientProvider>
   );

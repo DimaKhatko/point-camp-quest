@@ -22,6 +22,14 @@ export interface VerifiedTelegramUser {
   is_premium?: boolean;
 }
 
+/** Verified contents of an initData string. */
+export interface VerifiedInitData {
+  user: VerifiedTelegramUser;
+  /** The deep-link `startapp` value (e.g. `ref_123`), or null if absent. */
+  startParam: string | null;
+  authDate: number;
+}
+
 // Telegram recommends rejecting initData older than a day; we use one hour.
 const MAX_AUTH_AGE_SECONDS = 3600;
 
@@ -34,10 +42,11 @@ function unauthorized(reason: string): Response {
 }
 
 /**
- * Validates a Telegram `initData` string and returns the verified user.
- * Throws a 401 `Response` if the signature is missing/invalid or expired.
+ * Validates a Telegram `initData` string and returns the verified contents
+ * (user + deep-link start param). Throws a 401 `Response` if the signature is
+ * missing/invalid or expired.
  */
-export function verifyTelegramInitData(initData: string): VerifiedTelegramUser {
+export function verifyTelegramInitData(initData: string): VerifiedInitData {
   const botToken = process.env.TELEGRAM_BOT_TOKEN;
   if (!botToken) {
     // Misconfiguration, not a client error — fail loudly with a 500.
@@ -97,12 +106,13 @@ export function verifyTelegramInitData(initData: string): VerifiedTelegramUser {
     throw unauthorized("missing user id");
   }
 
-  return user;
+  // `start_param` is part of the signed payload, so it's safe to trust here.
+  return { user, startParam: params.get("start_param"), authDate };
 }
 
 /**
  * Server function: verify a raw `initData` string and return the verified
- * Telegram user. Call from the client as
+ * contents. Call from the client as
  * `validateTelegramInitData({ data: webApp.initData })`.
  */
 export const validateTelegramInitData = createServerFn({ method: "POST" })
@@ -112,6 +122,6 @@ export const validateTelegramInitData = createServerFn({ method: "POST" })
     }
     return initData;
   })
-  .handler(({ data }): VerifiedTelegramUser => {
+  .handler(({ data }): VerifiedInitData => {
     return verifyTelegramInitData(data);
   });

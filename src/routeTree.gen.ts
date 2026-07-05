@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as RewardsRouteImport } from './routes/rewards'
 import { Route as ClansRouteImport } from './routes/clans'
 import { Route as ChallengesRouteImport } from './routes/challenges'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 
 const RewardsRoute = RewardsRouteImport.update({
@@ -29,6 +30,11 @@ const ChallengesRoute = ChallengesRouteImport.update({
   path: '/challenges',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -37,12 +43,14 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/challenges': typeof ChallengesRoute
   '/clans': typeof ClansRoute
   '/rewards': typeof RewardsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/challenges': typeof ChallengesRoute
   '/clans': typeof ClansRoute
   '/rewards': typeof RewardsRoute
@@ -50,20 +58,22 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/challenges': typeof ChallengesRoute
   '/clans': typeof ClansRoute
   '/rewards': typeof RewardsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/challenges' | '/clans' | '/rewards'
+  fullPaths: '/' | '/admin' | '/challenges' | '/clans' | '/rewards'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/challenges' | '/clans' | '/rewards'
-  id: '__root__' | '/' | '/challenges' | '/clans' | '/rewards'
+  to: '/' | '/admin' | '/challenges' | '/clans' | '/rewards'
+  id: '__root__' | '/' | '/admin' | '/challenges' | '/clans' | '/rewards'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRoute
   ChallengesRoute: typeof ChallengesRoute
   ClansRoute: typeof ClansRoute
   RewardsRoute: typeof RewardsRoute
@@ -92,6 +102,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ChallengesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -104,6 +121,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRoute,
   ChallengesRoute: ChallengesRoute,
   ClansRoute: ClansRoute,
   RewardsRoute: RewardsRoute,
@@ -111,3 +129,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

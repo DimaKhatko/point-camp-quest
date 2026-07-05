@@ -2,6 +2,8 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 
 import { getTelegramWebApp, type TelegramWebAppUser } from "./telegram";
 import { user as mockUser } from "./mock";
+import type { AppEntryResult } from "./app-entry";
+import { enterApp } from "../server/entry";
 
 // The app user: identity comes from Telegram when available, gamification
 // stats stay mocked for now (those would come from our own backend later).
@@ -27,6 +29,12 @@ interface TelegramAuthState {
   isTelegram: boolean;
   /** Current app user — Telegram identity merged with mock stats. */
   user: AuthUser;
+  /** Raw signed initData string to pass to server functions, or null. */
+  initData: string | null;
+  /** Server-verified entry result (status + House), or null until resolved. */
+  entry: AppEntryResult | null;
+  /** True while the server-side first-login call is in flight. */
+  entryLoading: boolean;
 }
 
 const TelegramAuthContext = createContext<TelegramAuthState | null>(null);
@@ -63,6 +71,9 @@ function buildUser(tgUser: TelegramWebAppUser | null): AuthUser {
 export function TelegramAuthProvider({ children }: { children: ReactNode }) {
   const [telegramUser, setTelegramUser] = useState<TelegramWebAppUser | null>(null);
   const [ready, setReady] = useState(false);
+  const [initData, setInitData] = useState<string | null>(null);
+  const [entry, setEntry] = useState<AppEntryResult | null>(null);
+  const [entryLoading, setEntryLoading] = useState(false);
 
   // Telegram's SDK only exists in the browser, so reading it after mount keeps
   // SSR and the first client render identical (mock user) — no hydration drift.
@@ -72,6 +83,18 @@ export function TelegramAuthProvider({ children }: { children: ReactNode }) {
       webApp.ready();
       webApp.expand();
       setTelegramUser(webApp.initDataUnsafe?.user ?? null);
+      setInitData(webApp.initData || null);
+
+      // Run the server-side first-login flow with the signed initData. This
+      // registers the user and resolves their status/House. The client never
+      // writes to Firestore — only this server function does.
+      if (webApp.initData) {
+        setEntryLoading(true);
+        enterApp({ data: webApp.initData })
+          .then((result) => setEntry(result))
+          .catch(() => setEntry(null))
+          .finally(() => setEntryLoading(false));
+      }
     }
     setReady(true);
   }, []);
@@ -82,8 +105,11 @@ export function TelegramAuthProvider({ children }: { children: ReactNode }) {
       ready,
       isTelegram: telegramUser != null,
       user: buildUser(telegramUser),
+      initData,
+      entry,
+      entryLoading,
     }),
-    [telegramUser, ready],
+    [telegramUser, ready, initData, entry, entryLoading],
   );
 
   return <TelegramAuthContext.Provider value={value}>{children}</TelegramAuthContext.Provider>;
