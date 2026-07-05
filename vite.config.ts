@@ -20,7 +20,19 @@ export default defineConfig(({ command }) => ({
     // (our error-wrapping handler). Nitro builds the server from this.
     tanstackStart({ server: { entry: "server" } }),
     // Build-only: produce a Vercel-compatible server bundle.
-    ...(command === "build" ? [nitro({ preset: "vercel" })] : []),
+    ...(command === "build"
+      ? [
+          nitro({
+            preset: "vercel",
+            // firebase-admin and its google-cloud/grpc deps are CJS packages
+            // that use __dirname and load .proto assets by path — they break
+            // when bundled into the ESM function. traceDeps tells Nitro to keep
+            // them external and copy the real packages (with their assets) into
+            // the function's node_modules instead.
+            traceDeps: ["firebase-admin"],
+          }),
+        ]
+      : []),
     viteReact(),
   ],
 }));
